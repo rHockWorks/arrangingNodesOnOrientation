@@ -1,0 +1,202 @@
+//
+//  GameViewController.swift
+//  Game
+//
+//  Created by rHockWorks on 15/08/2019.
+//  Copyright © 2019 rHockWorks. All rights reserved.
+//
+
+import UIKit
+import SpriteKit
+import GameplayKit
+import AVFoundation
+
+
+let stopBackgroundMusicVolumeNotificationName = Notification.Name("stopBackgroundMusicVolumeNotificationName")
+let startBackgroundMusicVolumeNotificationName = Notification.Name("startBackgroundMusicVolumeNotificationName")
+let startGameplayNotificationName = Notification.Name("startGameplayNotificationName")
+let setMusicVolumeNotificationName = Notification.Name("setMusicVolumeNotificationName")
+
+
+//FIXME: TEST ORIENTATION
+var isPortrait: Bool = false
+var isLandscape: Bool = false
+
+
+
+class GameViewController: UIViewController {
+    
+    let skView: SKView = {
+        let view = SKView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        return view
+    }()
+    
+    lazy var backgroundMusic: AVAudioPlayer? = {
+        //guard let url = Bundle.main.url(forResource: HelperStrings.backgroundMusic.rawValue, withExtension: HelperStrings.m4aExtension.rawValue) else {
+        guard let url = Bundle.main.url(forResource: HelperStrings.backgroundMusic.rawValue, withExtension: HelperStrings.mp3Extension.rawValue) else {
+            return nil
+        }
+        do {
+            let player = try AVAudioPlayer(contentsOf: url)
+            player.numberOfLoops = -1
+            return player
+        } catch {
+            return nil
+        }
+    }()
+    
+    
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+    
+        
+//    override func viewWillLayoutSubviews() {
+//        super.viewWillLayoutSubviews()
+
+        view.addSubview(skView)
+        
+        //SKVIEW BOUNDARIES/CONSTRAINTS
+        skView.topAnchor.constraint(equalTo: view.topAnchor).isActive = true
+        skView.bottomAnchor.constraint(equalTo: view.bottomAnchor).isActive = true
+        skView.rightAnchor.constraint(equalTo: view.rightAnchor).isActive = true
+        skView.leftAnchor.constraint(equalTo: view.leftAnchor).isActive = true
+        
+        let scene = TitleMenu(size: CGSize(width: ScreenSize.width, height: ScreenSize.height))
+        scene.scaleMode = .aspectFill
+        skView.presentScene(scene)
+        skView.ignoresSiblingOrder = true
+        skView.showsNodeCount = true
+        
+        addNotificationObservers()
+        
+        Manager.shared.launch() //CHECK FOR FIRST LAUNCH TO ALLOW BACKGROUND MUSIC TO PLAY !
+        
+        playOrStopBackgroundMusic()
+        let info = ["volume": Stats.shared.getMusicVolume()]
+        //INFORM NOTIFICATION CONTROLLER VIA NOTIFICATION TO SET VALUE WITH KEY VALUE
+        NotificationCenter.default.post(name: setMusicVolumeNotificationName, object: nil, userInfo: info)
+    }
+    
+    
+    
+    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
+        super.viewWillTransition(to: size, with: coordinator)
+        if UIDevice.current.orientation.isLandscape {
+            print("Landscape")
+//            let test1 = ItemSelection()
+//            test1.setUpScene()
+            print("SKVIEW BOUNDS WIDTH : \(skView.bounds.width) WHILE IN LANDSCAPE")
+            print("SKVIEW BOUNDS HEIGHT : \(skView.bounds.height) WHILE IN LANDSCAPE")
+            skView.backgroundColor = UIColor.red
+        } else {
+            print("Portrait")
+            print("SKVIEW BOUNDS WIDTH : \(skView.bounds.width) WHILE IN PORTRAIT")
+            print("SKVIEW BOUNDS HEIGHT : \(skView.bounds.height) WHILE IN PORTRAIT")
+            skView.backgroundColor = UIColor.green
+        }
+//        coordinator.animate(alongsideTransition: { _ in
+//            // Execute before rotation
+//        }) { _ in
+//            //Execute after rotation
+//            let test1 = ItemSelection()
+//            test1.setUpScene()
+//        }
+    }
+    
+    
+    
+    override func didRotate(from fromInterfaceOrientation: UIInterfaceOrientation) {
+        var text=""
+        let test1 = ItemSelection()
+        switch UIDevice.current.orientation{
+        case .portrait:
+            text="Portrait"
+            printOutBounds(orientation: "Portrait")
+            isPortrait = true
+            test1.setUpScene()
+        case .portraitUpsideDown:
+            text="PortraitUpsideDown"
+            printOutBounds(orientation: "Portrait")
+            isPortrait = true
+            test1.setUpScene()
+        case .landscapeLeft:
+            text="LandscapeLeft"
+            printOutBounds(orientation: "Landscape")
+            isLandscape = true
+            //self.view.transform = CGAffineTransform(rotationAngle: angle)
+            test1.setUpScene()
+        case .landscapeRight:
+            text="LandscapeRight"
+            printOutBounds(orientation: "Landscape")
+            isLandscape = true
+            test1.setUpScene()
+            //self.view.transform = CGAffineTransform(rotationAngle: angle)
+        default:
+            text="Another"
+        }
+        NSLog("You have rotated to: \(text)")
+    }
+    
+    
+
+    func printOutBounds(orientation: String) {
+        
+        print("SKVIEW BOUNDS WIDTH : \(skView.bounds.width) WHILE IN \(orientation)")
+        print("SKVIEW BOUNDS HEIGHT : \(skView.bounds.height) WHILE IN \(orientation)")
+    }
+    
+    
+    //OBSERVE NOTIFICATION LAUNCHED
+    func addNotificationObservers() {
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(self.stopBackgroundMusic(_:)), name: stopBackgroundMusicVolumeNotificationName, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(self.startBackgroundMusic(_:)), name: startBackgroundMusicVolumeNotificationName, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(self.setMusicVolume(_:)), name: setMusicVolumeNotificationName, object: nil)
+
+    }
+    
+    func playOrStopBackgroundMusic() {
+        
+        if Stats.shared.getSound() {
+            backgroundMusic?.play()
+        } else {
+            backgroundMusic?.stop()
+        }
+    }
+ 
+
+    @objc func stopBackgroundMusic(_ info: Notification) {      //OBJECTIVE-C TO GET SELECTOR FROM NOTIFICATION
+        
+        if Stats.shared.getSound() {
+            backgroundMusic?.stop()
+        }
+    }
+
+    @objc func startBackgroundMusic(_ info: Notification) {
+        
+        if Stats.shared.getSound() {
+            backgroundMusic?.play()
+        }
+    }
+
+    //UNWRAPS INFO FROM NOTIFICATION
+    @objc func setMusicVolume(_ info: Notification) {
+        
+        guard let userInfo = info.userInfo else { return }
+        let volume = userInfo["volume"] as! Float   //GET KEY
+        setBackgroundMusicVolume(to: volume)
+    }
+    
+    
+    func setBackgroundMusicVolume(to volume: Float) {
+        
+        backgroundMusic?.volume = volume
+    }
+
+
+}
+
+
+
