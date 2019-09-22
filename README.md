@@ -17,7 +17,7 @@ ref: https://www.hackingwithswift.com/example-code/uikit/how-to-read-the-interfa
 
 https://stackoverflow.com/questions/36285822/redraw-subviews-programmatically-on-orientation-change
 
-Finally, there is an old project from 2015 by mgrebenets that offer Auto Layout like functionality for SpriteKit:
+∙ Finally, there is an old project from 2015 by mgrebenets that offer Auto Layout like functionality for SpriteKit:
 
 ref: https://github.com/mgrebenets/SpriteKitAutoLayout
 
